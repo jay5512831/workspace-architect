@@ -1,3 +1,5 @@
+[中文版](README_CN.md) | **English**
+
 # 🏗️ Workspace Architect
 
 > A universal AI skill that builds customized workstations for any complex scenario — team management, project leadership, research, startups, and more.
