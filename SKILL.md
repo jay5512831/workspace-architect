@@ -1,106 +1,206 @@
 ---
 name: workspace-architect
-description: "Universal workspace architect. Builds customized AI-powered workstations for any complex scenario — team management, project leadership, research, startups, and more. Uses 'Omniscient SOUL + Context-based Project Splitting' architecture instead of multi-agent dispatch."
-description_zh: "通用工作台架构师。为任何复杂场景（团队管理、项目负责人、论文研究、创业等）搭建定制化AI工作空间。采用'全能SOUL + 上下文项目拆分'架构。"
-description_en: "Universal workspace architect for any complex scenario. Builds customized AI workstations with Omniscient SOUL + Project Splitting architecture."
-version: 1.0.0
+description: "WorkBuddy Skill：工作台架构师。为任何复杂场景搭建定制化 AI 工作空间（团队管理、项目负责、论文研究、创业、活动策划等）。采用「全能 SOUL + 上下文项目拆分」架构。触发词：搭建工作空间、建工作台、梳理工作台、工作空间架构、复杂事务管理、帮我建一个工作空间、我有个复杂的事情需要管理、build workspace、workspace setup"
+version: 1.1.0
 ---
 
 # 工作台架构师 — Workspace Architect
 
-> 一个Skill，为任何复杂场景生成定制化的AI工作空间。
+> 一个 WorkBuddy Skill，通过问卷驱动为任何复杂场景生成定制化 AI 工作空间。
 
 ---
 
-## 什么时候加载这个Skill
+## 何时触发
 
-- 用户想要搭建一个新的工作空间/工作台
-- 用户需要整理一个复杂的事务（项目管理、团队管理、论文、创业、装修…）
-- 用户提到"帮我建一个工作空间"、"帮我梳理工作台"、"我有个复杂的事情需要管理"
-- 用户想了解"全能SOUL + 项目拆分"这套AI工作方法论
+当用户的意图匹配以下任一条件时加载本 Skill：
+
+- 想要搭建/创建一个新的工作空间或工作台
+- 需要整理一个复杂事务（项目管理、团队管理、论文、创业、装修、活动策划……）
+- 说了类似「帮我建一个工作空间」「帮我梳理工作台」「我有个复杂的事情需要管理」的话
+- 想了解「全能 SOUL + 项目拆分」这套 AI 工作方法论
+
+**不应触发的场景**：用户只是随口提到"工作空间"但实际想要的是 IDE 设置、云服务器配置等技术操作。
+
+---
+
+## 资源文件索引
+
+加载本 Skill 后可按需读取以下文件：
+
+| 文件路径 | 内容 | 何时读取 |
+|---------|------|---------|
+| `references/architecture-guide.md` | 全能 SOUL vs 多 Agent 架构方法论 | 用户想了解方法论时 |
+| `references/questionnaire.md` | 两轮问卷的完整问题设计和分支逻辑 | 进入问卷流程时 |
+| `references/directory-spec.md` | 工作空间标准目录结构规范 | 生成步骤 1 |
+| `references/soul-template.md` | SOUL.md 模板（含 `{{变量}}` 占位符和变量说明表） | 生成步骤 2 |
+| `references/digest-workflow.md` | 资料消化 4 阶段工作流详细定义 | 生成步骤 2（填入 SOUL.md） |
+| `scripts/generate-guide.md` | 生成操作完整指引和变量映射表 | 生成步骤 1-5 全程参考 |
 
 ---
 
 ## 工作流程
 
-加载后，先判断用户意图：
+加载后，先判断用户意图，分流到对应路径：
 
-**想了解架构方法论？** → 读取 `references/architecture-guide.md`，向用户讲解为什么用全能SOUL而非多Agent分发
+### 路径 A：讲解方法论
 
-**想新建工作空间？** → 进入下面的"问卷 → 生成"流程
+**触发**：用户想了解架构思想，而不是立刻建工作空间。
+
+1. 读取 `references/architecture-guide.md`
+2. 用简明语言向用户讲解「全能 SOUL + 上下文项目拆分」vs「多 Agent 分发」的区别
+3. 如果用户感兴趣，引导进入路径 B
+
+### 路径 B：问卷 → 生成工作空间
+
+**触发**：用户想新建一个工作空间。
+
+完整流程如下：
 
 ---
 
-## 问卷收集流程
+## Step 1：问卷收集（两轮）
 
-通过 `ask_followup_question` 工具分两轮收集信息：
+读取 `references/questionnaire.md` 获取完整问卷设计。
 
 ### 第一轮：核心场景
 
-用一个开放式问题开场：
+通过 `ask_followup_question` 工具一次性收集：
 
-> "你要用这个工作空间管理什么事？简单描述一下场景。"
+1. **场景描述**（开放式输入）— "你要用这个工作空间管理什么事？简单描述一下。"
+2. **协作规模**（单选）— 个人独立 / 小组(2-5人) / 中型团队(5-30人) / 大团队(30+)
+3. **主要产出格式**（多选）— PPT / Excel / Word / 代码 / 设计稿 / 其他
 
-同时收集：
-1. **场景描述**（自由输入）
-2. **协作规模**：个人独立 / 小组(2-5人) / 中型团队(5-30人) / 大团队(30+)
-3. **主要产出格式**：PPT / Excel / Word / 代码 / 设计稿 / 其他（多选）
+### AI 分析
 
-### 第二轮：AI分析 + 确认
+根据第一轮答案，AI 执行以下分析：
 
-根据第一轮的场景描述，AI分析出涉及的领域/模块（3-7个），列出来让用户确认或调整。同时收集：
+1. 从场景描述中识别涉及的**领域/模块**（3-7 个）
+2. 为每个领域拟一个**简短名称**和**一句话描述**
+3. 推断合适的**助手角色名称**（如"全能管理官""项目指挥官"）
 
-4. **领域确认**：AI建议的领域列表，用户可增删改
-5. **是否有历史资料需要导入**：是/否
-6. **工作空间路径**：用户指定
+⚠️ **如果场景描述过于模糊，无法识别出至少 3 个领域**：主动追问用户补充具体信息，不要强行猜测。例如："你说的'管理日常工作'具体包含哪些事项？比如招聘、汇报、预算……"
 
-### 问卷设计详情
+### 第二轮：确认 + 补充
 
-读取 `references/questionnaire.md` 获取完整的问卷问题设计和分支逻辑。
+展示 AI 分析结果，通过 `ask_followup_question` 收集：
 
----
+4. **领域确认**（展示 AI 建议的领域列表）— 没问题 / 需要增加 / 需要删减 / 需要调整
+5. **是否有历史资料需要导入** — 有，后续导入 / 有，现在导入 / 没有
+6. **工作空间路径** — 用户指定目标路径
 
-## 生成流程
+### 问卷结果整理
 
-问卷收集完成后，按以下步骤生成定制工作空间：
+两轮收集完成后，**必须**将结果整理为标准格式（参考 `references/questionnaire.md` 末尾的 YAML 格式定义），确认以下字段完整后再进入生成流程：
 
-1. **创建目录结构** — 读取 `references/directory-spec.md`，创建标准目录
-2. **生成SOUL.md** — 读取 `references/soul-template.md`，替换变量，填入用户场景的领域方法论
-3. **生成模板文件** — 根据用户确认的领域，为每个领域创建 `templates/{领域}/` 目录和对应模板
-4. **配置MEMORY.md** — 根据领域列表生成记忆分区框架
-5. **生成辅助文件** — IDENTITY.md、README.md、inbox/README.md
+- `scenario`（场景描述）
+- `role_name`（角色名）
+- `role_description`（角色一句话描述）
+- `scale`（协作规模）
+- `output_formats`（产出格式列表）
+- `domains`（领域列表，每个含 name/label/brief）
+- `has_history`（是否有历史资料）
+- `workspace_path`（工作空间路径）
 
-生成时参考 `scripts/generate-guide.md` 中的详细操作步骤和变量映射表。
-
----
-
-## 生成后的工作空间标准结构
-
-```
-{用户指定路径}/
-├── SOUL.md              ← 全能人设 + 领域方法论 + 4大自动工作流
-├── IDENTITY.md          ← 身份信息
-├── README.md            ← 使用说明
-├── .workbuddy/
-│   └── memory/
-│       └── MEMORY.md    ← 长期记忆（按领域分区）
-├── templates/           ← 领域模板库（建项时自动拷贝）
-│   ├── {领域1}/
-│   ├── {领域2}/
-│   └── ...
-├── projects/            ← 活跃项目（AI按事项自动创建）
-├── archive/             ← 已结项归档
-└── inbox/               ← 待整理资料收件箱
-    └── README.md
-```
+⚠️ **如果任何必填字段缺失**：回到问卷追问，不要用默认值代替。
 
 ---
 
-## SOUL.md 中的4大自动工作流
+## Step 2：预检
 
-生成的SOUL.md会内置这4个工作流，读取 `references/digest-workflow.md` 获取资料消化工作流的详细定义：
+进入生成流程前，执行以下检查：
 
-1. **自动建项** — 用户说一句话，AI在projects/下创建目录、拷模板、读记忆填数据
-2. **自动结项** — 用户说"这事结了"，AI移入archive/、更新memory摘要
-3. **资料归档** — 用户丢资料到inbox/或对话中，AI自动分类到对应位置
-4. **资料消化** — 批量处理历史资料的4阶段流程（收集-理解-归类-反馈）
+| 检查项 | 通过条件 | 不通过时的处理 |
+|--------|---------|--------------|
+| 目标路径是否已存在 | 路径不存在，或存在但为空目录 | 告知用户路径已有内容，询问：① 换一个路径 ② 在现有目录上追加（仅创建缺失的文件） ③ 清空后重建（⚠️ 需二次确认） |
+| 路径是否有写入权限 | 能成功创建测试目录 | 告知用户权限不足，请换路径或手动创建目录后重试 |
+| 领域数量是否合理 | 3-7 个 | < 3 个：提醒可能遗漏，建议补充；> 7 个：建议合并相近领域 |
+
+---
+
+## Step 3：生成工作空间
+
+读取 `scripts/generate-guide.md` 获取完整操作指引。按以下顺序执行：
+
+### 3.1 创建目录结构
+
+读取 `references/directory-spec.md`，创建标准目录：
+
+- `{workspace_path}/.workbuddy/memory/`
+- `{workspace_path}/templates/{每个领域的 name}/`
+- `{workspace_path}/projects/`
+- `{workspace_path}/archive/`
+- `{workspace_path}/inbox/`
+
+### 3.2 生成 SOUL.md 🔍 **← 检查点**
+
+读取 `references/soul-template.md`，替换所有 `{{变量}}`：
+
+- `{{ROLE_NAME}}` ← `role_name`
+- `{{ROLE_DESCRIPTION}}` ← `role_description`
+- `{{DOMAIN_LIST_BRIEF}}` ← 所有领域 label 用顿号连接
+- `{{SCENARIO_CONTEXT}}` ← 基于 scenario 和 scale 生成的 2-3 句背景段落
+- `{{DOMAINS_METHODOLOGY}}` ← **为每个领域生成 200-300 字方法论**（核心思维框架 + 3-5 条关键原则 + 常见陷阱。参考 `scripts/generate-guide.md` 中的格式要求）
+- `{{TEMPLATE_INDEX}}` ← 根据实际 templates/ 目录生成映射列表
+- `{{CUSTOM_WORKFLOWS}}` ← 如有特殊需求则追加，否则留空
+
+**生成后暂停**，向用户展示 SOUL.md 的领域方法论摘要（每个领域的标题 + 核心要点），问："方法论内容你看一下，有需要调整的吗？" 用户确认后再继续。
+
+### 3.3 生成模板文件
+
+根据用户确认的领域，为每个领域创建 `templates/{领域名}/` 下 3-5 个模板文件。
+
+模板编写规范（详见 `scripts/generate-guide.md`）：
+- 每个模板是独立的 Markdown 文件
+- 包含清晰标题和结构
+- 用 `<!-- 请替换为实际数据 -->` 标记占位符
+- 开头用引用块写使用说明
+
+### 3.4 配置 MEMORY.md
+
+生成 `.workbuddy/memory/MEMORY.md`，按领域创建分区框架。
+
+### 3.5 生成辅助文件
+
+- `IDENTITY.md` — 角色身份信息
+- `README.md` — 工作空间使用说明
+- `inbox/README.md` — 资料收件箱使用说明
+
+⚠️ **如果任何步骤中文件创建失败**：立即停止后续步骤，告知用户哪个文件失败了，给出可能原因（路径问题/权限问题/磁盘空间），等用户排查后再继续。不要跳过失败的文件继续生成。
+
+---
+
+## Step 4：结果展示
+
+生成完成后，向用户展示：
+
+1. **目录结构总览** — 用表格列出所有创建的目录和文件
+2. **SOUL.md 方法论摘要** — 每个领域的核心要点（一句话）
+3. **模板文件清单** — 每个领域下有哪些模板
+4. **下一步建议**：
+   - 如果 `has_history` = 有 → 引导开始资料消化流程（"你可以把历史资料放到 inbox/ 目录，然后告诉我'帮我消化 inbox 里的资料'"）
+   - 如果 `has_history` = 没有 → 引导开始第一个项目（"直接告诉我你要做什么事，我会自动建项目"）
+
+---
+
+## 异常处理速查
+
+| 异常场景 | 处理方式 |
+|---------|---------|
+| 用户中途说"算了"/"不做了" | 停止当前流程，告知已创建的文件（如有），问是否要清理 |
+| 用户描述的场景完全无法理解 | 不要硬猜领域，诚实说"我不太确定你的场景涉及哪些领域"，给几个示例引导用户重新描述 |
+| 用户指定的路径是系统目录（如 C:\Windows） | 拒绝创建，解释原因，建议用用户文档目录 |
+| 生成过程中用户想改之前确认的领域 | 支持回退：回到 Step 1 第二轮重新确认领域，再重新生成 |
+| 目标路径下已有 SOUL.md 等文件 | 这是一个已存在的工作空间，询问用户意图：① 覆盖重建 ② 补充领域（增量更新） ③ 取消 |
+
+---
+
+## 生成产物说明
+
+生成的工作空间中，SOUL.md 会内置以下 4 大自动工作流（详细定义见 `references/digest-workflow.md` 和 `references/soul-template.md`）：
+
+1. **自动建项** — 用户说一句话，AI 在 `projects/` 下创建目录、拷模板、读记忆填数据
+2. **自动结项** — 用户说"这事结了"，AI 移入 `archive/`、更新 memory 摘要
+3. **资料归档** — 用户丢资料到 `inbox/` 或对话中，AI 自动分类到对应位置
+4. **资料消化** — 批量处理历史资料的 4 阶段流程（收集→理解→归类→反馈）
+
+这些工作流是**生成出来的 SOUL.md 的一部分**，不是本 Skill 的直接功能。本 Skill 的职责到"生成完整工作空间"为止。
