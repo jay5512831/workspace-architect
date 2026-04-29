@@ -1,7 +1,7 @@
 ---
 name: workspace-architect
-description: "WorkBuddy Skill：工作台架构师。为任何复杂场景搭建定制化 AI 工作空间（团队管理、项目负责、论文研究、创业、活动策划等）。采用「全能 SOUL + 上下文项目拆分」架构。触发词：搭建工作空间、建工作台、梳理工作台、工作空间架构、复杂事务管理、帮我建一个工作空间、我有个复杂的事情需要管理、build workspace、workspace setup"
-version: 1.2.0
+description: "WorkBuddy Skill：工作台架构师。为任何复杂场景搭建定制化 AI 工作空间（团队管理、项目负责、论文研究、创业、活动策划等）。采用「全能 SOUL + 上下文项目拆分」架构。触发词：搭建工作空间、建工作台、梳理工作台、工作空间架构、工作台、复杂事务管理、帮我建一个工作空间、我有个复杂的事情需要管理、build workspace、workspace setup"
+version: 1.3.0
 ---
 
 # 工作台架构师 — Workspace Architect
@@ -61,49 +61,14 @@ version: 1.2.0
 
 ## Step 1：问卷收集（两轮）
 
-读取 `references/questionnaire.md` 获取完整问卷设计。
+> **输入**：用户意图 → **输出**：结构化问卷结果（YAML）→ Step 2
+> **模式**：人类在环
 
-### 第一轮：核心场景
+两轮问卷：第一轮收集场景/规模/产出格式 → AI 分析匹配领域 → 第二轮确认领域+路径。
 
-通过 `ask_followup_question` 工具一次性收集：
+读取 `references/questionnaire.md` 获取完整问卷设计、分支逻辑和 YAML 字段规格。
 
-1. **场景描述**（开放式输入）— "你要用这个工作空间管理什么事？简单描述一下。"
-2. **协作规模**（单选）— 个人独立 / 小组(2-5人) / 中型团队(5-30人) / 大团队(30+)
-3. **主要产出格式**（多选）— PPT / Excel / Word / 代码 / 设计稿 / 其他
-
-### AI 分析
-
-根据第一轮答案，AI 执行以下分析：
-
-1. 读取 `references/domain-catalog.md`，将用户场景描述与预置的 18 个领域逐一匹配（关键词 + 语义理解）
-2. 命中的领域直接采用其**标准模块**；通过"常搭配领域"检查是否有遗漏
-3. 如有本目录未覆盖的需求，自由创建新领域（给出 name/label/brief）
-4. 推断合适的**助手角色名称**（如"全能管理官""项目指挥官"）
-
-⚠️ **如果场景描述过于模糊，无法识别出至少 3 个领域**：主动追问用户补充具体信息，不要强行猜测。例如："你说的'管理日常工作'具体包含哪些事项？比如招聘、汇报、预算……"
-
-### 第二轮：确认 + 补充
-
-展示 AI 分析结果，通过 `ask_followup_question` 收集：
-
-4. **领域确认**（展示 AI 建议的领域列表）— 没问题 / 需要增加 / 需要删减 / 需要调整
-5. **是否有历史资料需要导入** — 有，后续导入 / 有，现在导入 / 没有
-6. **工作空间路径** — 用户指定目标路径
-
-### 问卷结果整理
-
-两轮收集完成后，**必须**将结果整理为标准格式（参考 `references/questionnaire.md` 末尾的 YAML 格式定义），确认以下字段完整后再进入生成流程：
-
-- `scenario`（场景描述）
-- `role_name`（角色名）
-- `role_description`（角色一句话描述）
-- `scale`（协作规模）
-- `output_formats`（产出格式列表）
-- `domains`（领域列表，每个含 name/label/brief）
-- `has_history`（是否有历史资料）
-- `workspace_path`（工作空间路径）
-
-⚠️ **如果任何必填字段缺失**：回到问卷追问，不要用默认值代替。
+⚠️ 场景过于模糊（<3 个领域）时主动追问，不强行猜测。必填字段缺失时回到问卷追问，不用默认值代替。
 
 ---
 
@@ -121,55 +86,18 @@ version: 1.2.0
 
 ## Step 3：生成工作空间
 
-读取 `scripts/generate-guide.md` 获取完整操作指引。按以下顺序执行：
+> **输入**：问卷结果 + 预检通过 → **输出**：完整工作空间（目录 + SOUL.md + 模板 + 辅助文件）
+> **模式**：人类在环（SOUL 方法论和模板清单各有检查点）
 
-### 3.1 创建目录结构
+读取 `scripts/generate-guide.md` 获取完整操作指引、变量映射表和质量自检清单。按 5 步执行：
 
-读取 `references/directory-spec.md`，创建标准目录：
+1. **创建目录结构**（读取 `references/directory-spec.md`）
+2. **生成 SOUL.md** 🔍 ← 检查点：展示方法论摘要等用户确认（读取 `references/soul-template.md`，领域方法论每个 200-300 字）
+3. **生成模板文件** 🔍 ← 轻量检查点：展示模板清单（编写规范见 `scripts/generate-guide.md`）
+4. **配置 MEMORY.md**：按领域创建分区框架
+5. **生成辅助文件**：IDENTITY.md / README.md / inbox/README.md
 
-- `{workspace_path}/.workbuddy/memory/`
-- `{workspace_path}/templates/{每个领域的 name}/`
-- `{workspace_path}/projects/`
-- `{workspace_path}/archive/`
-- `{workspace_path}/inbox/`
-
-### 3.2 生成 SOUL.md 🔍 **← 检查点**
-
-读取 `references/soul-template.md`，替换所有 `{{变量}}`：
-
-- `{{ROLE_NAME}}` ← `role_name`
-- `{{ROLE_DESCRIPTION}}` ← `role_description`
-- `{{DOMAIN_LIST_BRIEF}}` ← 所有领域 label 用顿号连接
-- `{{SCENARIO_CONTEXT}}` ← 基于 scenario 和 scale 生成的 2-3 句背景段落
-- `{{DOMAINS_METHODOLOGY}}` ← **为每个领域生成 200-300 字方法论**（核心思维框架 + 3-5 条关键原则 + 常见陷阱。参考 `scripts/generate-guide.md` 中的格式要求）
-- `{{TEMPLATE_INDEX}}` ← 根据实际 templates/ 目录生成映射列表
-- `{{CUSTOM_WORKFLOWS}}` ← 如有特殊需求则追加，否则留空
-
-**生成后暂停**，向用户展示 SOUL.md 的领域方法论摘要（每个领域的标题 + 核心要点），问："方法论内容你看一下，有需要调整的吗？" 用户确认后再继续。
-
-### 3.3 生成模板文件 🔍 **← 轻量检查点**
-
-根据用户确认的领域，为每个领域创建 `templates/{领域名}/` 下 3-5 个模板文件。
-
-模板编写规范（详见 `scripts/generate-guide.md`）：
-- 每个模板是独立的 Markdown 文件
-- 包含清晰标题和结构
-- 用 `<!-- 请替换为实际数据 -->` 标记占位符
-- 开头用引用块写使用说明
-
-**生成后展示模板清单**（每个领域下的文件名列表），问用户："模板文件看一下，有需要增减的吗？" 用户确认或快速扫过后继续。
-
-### 3.4 配置 MEMORY.md
-
-生成 `.workbuddy/memory/MEMORY.md`，按领域创建分区框架。
-
-### 3.5 生成辅助文件
-
-- `IDENTITY.md` — 角色身份信息
-- `README.md` — 工作空间使用说明
-- `inbox/README.md` — 资料收件箱使用说明
-
-⚠️ **如果任何步骤中文件创建失败**：立即停止后续步骤，告知用户哪个文件失败了，给出可能原因（路径问题/权限问题/磁盘空间），等用户排查后再继续。不要跳过失败的文件继续生成。
+⚠️ 任何步骤文件创建失败 → 立即停止，告知原因，等用户排查后再继续。
 
 ---
 
@@ -195,6 +123,8 @@ version: 1.2.0
 | 用户指定的路径是系统目录（如 C:\Windows） | 拒绝创建，解释原因，建议用用户文档目录 |
 | 生成过程中用户想改之前确认的领域 | 支持回退：回到 Step 1 第二轮重新确认领域，再重新生成 |
 | 目标路径下已有 SOUL.md 等文件 | 这是一个已存在的工作空间，询问用户意图：① 覆盖重建 ② 补充领域（增量更新） ③ 取消 |
+| 网络断开时访问云路径失败 | 提示用户检查网络或使用本地路径 |
+| SOUL 模板文件损坏 | 从 ref 重新读取 `soul-template.md`，通知用户模板已重载 |
 
 ---
 
